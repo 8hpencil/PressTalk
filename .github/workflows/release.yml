@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        run: swift test
+
+      - name: Build Universal app bundle
+        # E5: the macos runner is arm64; a default build would not run on
+        # Intel Macs. UNIVERSAL=1 makes build_app.sh build arm64 + x86_64.
+        run: UNIVERSAL=1 VERSION="${GITHUB_REF_NAME#v}" ./build_app.sh
+
+      - name: Verify architectures
+        run: |
+          lipo -archs PressTalk.app/Contents/MacOS/PressTalk
+          lipo -archs PressTalk.app/Contents/MacOS/PressTalk | grep -q x86_64
+          lipo -archs PressTalk.app/Contents/MacOS/PressTalk | grep -q arm64
+
+      - name: Package
+        run: |
+          ditto -c -k --keepParent PressTalk.app "PressTalk-${GITHUB_REF_NAME}.zip"
+          shasum -a 256 "PressTalk-${GITHUB_REF_NAME}.zip" > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "PressTalk-${GITHUB_REF_NAME}.zip" \
+            SHA256SUMS.txt \
+            --title "PressTalk $GITHUB_REF_NAME" \
+            --generate-notes
