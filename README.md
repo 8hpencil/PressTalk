@@ -55,19 +55,13 @@ Or for a quick run during development: `swift run`.
 Read this before dictating anything sensitive:
 
 - **Audio is sent to Google's Gemini API** for transcription, authenticated with your own key. The local audio file is deleted from disk the moment transcription finishes. PressTalk keeps no history of your audio or text.
-- **Google may use free-tier requests for model training.** This is Google's policy for AI Studio free-tier keys, not something PressTalk can change. For sensitive content, use a paid-tier key — or wait for the fully offline local provider on the roadmap.
+- **Google may use free-tier requests for model training.** This is Google's policy for AI Studio free-tier keys, not something PressTalk can change. For sensitive content, use a paid-tier key.
 - PressTalk's own logs record events only ("transcription succeeded, 42 chars"), never content, never your key.
 - No accounts, no telemetry, no servers of ours. The code is GPL-licensed and auditable — that's the point.
 
 ## Requirements
 
 - macOS 13 Ventura or later (Apple Silicon and Intel).
-
-## Roadmap
-
-- **v1.1 — local whisper.cpp provider**: fully offline transcription, no API key, no data leaving your Mac. Also the answer for regions where Google APIs are unreachable.
-- More providers behind the same `TranscriptionProvider` protocol (OpenAI-compatible endpoints, regional ASR services).
-- **Transparency note**: a paid "convenience edition" may follow later — notarized installer, auto-updates, hosted transcription quota (no key signup), curated vocabulary packs. The GPL core you're looking at stays open and self-sufficient either way.
 
 ## Contributing
 

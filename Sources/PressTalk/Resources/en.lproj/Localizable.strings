@@ -26,7 +26,7 @@
 "settings.model.label" = "Model name:";
 "settings.privacy.note" = "Note: free-tier requests may be used by Google for model training. Use a paid tier for sensitive content. Audio is deleted right after transcription and never stored.";
 "settings.provider.label" = "Provider:";
-"settings.provider.note" = "Local whisper.cpp and more providers are on the roadmap.";
+"settings.provider.note" = "Currently supports Google Gemini (bring your own key).";
 "settings.prompt.label" = "Custom prompt (empty = built-in default):";
 "settings.prompt.note" = "Instructions sent to the model alongside your audio.";
 "settings.hintWords.label" = "Hint words (one per line):";
