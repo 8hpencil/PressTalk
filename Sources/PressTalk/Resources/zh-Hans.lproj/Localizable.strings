@@ -1,0 +1,70 @@
+/* 菜单栏状态 */
+"state.idle.tooltip" = "PressTalk：空闲（按住快捷键说话）";
+"state.recording.tooltip" = "PressTalk：正在录音…";
+"state.recordingWarning.tooltip" = "PressTalk：录音即将达到 5 分钟上限，到点自动停止";
+"state.transcribing.tooltip" = "PressTalk：正在识别…";
+"state.idle.menu" = "状态：空闲";
+"state.recording.menu" = "状态：正在录音…";
+"state.recordingWarning.menu" = "状态：录音即将达上限（5 分钟自动停止）";
+"state.transcribing.menu" = "状态：正在识别…";
+
+/* 菜单项 */
+"menu.settings" = "设置…";
+"menu.quit" = "退出";
+"menu.busyHint" = " 上一条仍在识别…";
+
+/* 设置窗口 */
+"settings.windowTitle" = "设置 — PressTalk";
+"settings.title" = "PressTalk";
+"settings.subtitle" = "macOS 按住即说的语音听写，使用你自己的 API 密钥";
+"settings.section.transcription" = "转写";
+"settings.section.hotkey" = "快捷键";
+"settings.section.general" = "通用";
+"settings.apiKey.label" = "Google AI Studio API 密钥：";
+"settings.apiKey.placeholder" = "输入您的 API 密钥 (AIzaSy…)";
+"settings.apiKey.getKey" = "获取 API 密钥 ↗";
+"settings.model.label" = "模型名称：";
+"settings.privacy.note" = "提示：免费层请求可能被 Google 用于模型训练，敏感内容请使用付费层。音频在转写完成后立即删除，绝不存储。";
+"settings.provider.label" = "转写服务：";
+"settings.provider.note" = "本地 whisper.cpp 与更多服务商已在路线图中。";
+"settings.prompt.label" = "自定义提示词（留空使用内置默认）：";
+"settings.prompt.note" = "随音频一起发送给模型的指令。";
+"settings.hintWords.label" = "专有名词词表（每行一个）：";
+"settings.hintWords.note" = "模型将按给出的写法拼写这些专业词汇。";
+"settings.hotkey.label" = "按住说话快捷键：";
+"settings.hotkey.capture" = "修改…";
+"settings.hotkey.capturing" = "请按下新快捷键（Esc 取消）";
+"settings.hotkey.note" = "按住说话，松开后自动识别并插入文字。保存后立即生效。";
+"settings.launchAtLogin" = "开机自动启动";
+"settings.launchAtLogin.error" = "无法修改登录项，请在构建好的 App 中重试。";
+"settings.save" = "保存设置";
+"settings.saved" = "保存成功！";
+
+/* 通知 */
+"notif.welcome.title" = "PressTalk";
+"notif.welcome.body" = "欢迎使用！请在菜单栏点击图标并打开设置，配置您的 Google AI Studio API 密钥。";
+"notif.noKey.title" = "无法开始录音";
+"notif.noKey.body" = "请先配置 Google AI Studio API 密钥。";
+"notif.micDenied.title" = "录音失败";
+"notif.micDenied.body" = "没有麦克风访问权限。请在系统设置中允许此应用访问麦克风。";
+"notif.recordFailed.title" = "录音失败";
+"notif.recordFailed.body" = "无法初始化录音设备。";
+"notif.empty.title" = "未识别到内容";
+"notif.empty.body" = "这段录音没有识别出任何文字。";
+"notif.insertFailed.title" = "插入失败";
+"notif.insertFailed.body" = "无法将文字插入当前应用。请在 系统设置 → 隐私与安全性 → 辅助功能 中允许本应用。";
+"notif.sttFailed.title" = "识别失败";
+
+/* 转写错误 */
+"error.missingAPIKey" = "未配置 Google AI Studio API 密钥，请在设置中配置。";
+"error.invalidAPIKey" = "API 密钥无效或已被吊销，请打开设置检查密钥。";
+"error.rateLimited" = "已达免费层速率限制，请稍后再试。";
+"error.invalidAudioData" = "无法读取或编码录制的音频文件。";
+"error.requestFailed" = "请求失败: %@";
+"error.serverError" = "服务器返回了错误状态码: %d";
+"error.emptyResponse" = "服务没有返回任何内容。";
+"error.parsingError" = "解析返回数据失败。";
+
+/* 提示词 */
+"prompt.default" = "请把这段语音转写为文字。这段语音可能是中英文混合的，请保持正确的拼写和中英文混排格式。请智能地去除语气词、叹词以及重复和无意义的词语（例如：'呃'、'啊'、'然后'、'这个'、'那个'、'就是'、'um'、'uh'）。直接输出转写后的最终文本，不要包含任何旁白、前缀、后缀、说明或 markdown 格式。";
+"prompt.hintPrefix" = "\n以下专有名词可能在语音中出现，请按照给出的写法拼写：%@。";

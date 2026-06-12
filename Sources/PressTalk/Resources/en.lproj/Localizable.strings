@@ -1,0 +1,70 @@
+/* Menu bar states */
+"state.idle.tooltip" = "PressTalk: idle (hold the hotkey and speak)";
+"state.recording.tooltip" = "PressTalk: recording…";
+"state.recordingWarning.tooltip" = "PressTalk: nearing the 5-minute recording cap, will auto-stop";
+"state.transcribing.tooltip" = "PressTalk: transcribing…";
+"state.idle.menu" = "Status: idle";
+"state.recording.menu" = "Status: recording…";
+"state.recordingWarning.menu" = "Status: nearing recording cap (auto-stop at 5 min)";
+"state.transcribing.menu" = "Status: transcribing…";
+
+/* Menu items */
+"menu.settings" = "Settings…";
+"menu.quit" = "Quit";
+"menu.busyHint" = " still transcribing…";
+
+/* Settings window */
+"settings.windowTitle" = "Settings — PressTalk";
+"settings.title" = "PressTalk";
+"settings.subtitle" = "Push-to-talk dictation for macOS, powered by your own API key";
+"settings.section.transcription" = "Transcription";
+"settings.section.hotkey" = "Hotkey";
+"settings.section.general" = "General";
+"settings.apiKey.label" = "Google AI Studio API key:";
+"settings.apiKey.placeholder" = "Enter your API key (AIzaSy…)";
+"settings.apiKey.getKey" = "Get an API key ↗";
+"settings.model.label" = "Model name:";
+"settings.privacy.note" = "Note: free-tier requests may be used by Google for model training. Use a paid tier for sensitive content. Audio is deleted right after transcription and never stored.";
+"settings.provider.label" = "Provider:";
+"settings.provider.note" = "Local whisper.cpp and more providers are on the roadmap.";
+"settings.prompt.label" = "Custom prompt (empty = built-in default):";
+"settings.prompt.note" = "Instructions sent to the model alongside your audio.";
+"settings.hintWords.label" = "Hint words (one per line):";
+"settings.hintWords.note" = "Domain terms the model should spell exactly as given.";
+"settings.hotkey.label" = "Push-to-talk hotkey:";
+"settings.hotkey.capture" = "Change…";
+"settings.hotkey.capturing" = "Press the new hotkey (Esc to cancel)";
+"settings.hotkey.note" = "Hold to talk, release to transcribe and insert. Takes effect immediately after saving.";
+"settings.launchAtLogin" = "Launch at login";
+"settings.launchAtLogin.error" = "Could not change the login item. Try again from a built app bundle.";
+"settings.save" = "Save";
+"settings.saved" = "Saved!";
+
+/* Notifications */
+"notif.welcome.title" = "PressTalk";
+"notif.welcome.body" = "Welcome! Click the menu bar icon and open Settings to add your Google AI Studio API key.";
+"notif.noKey.title" = "Cannot start recording";
+"notif.noKey.body" = "Please configure your Google AI Studio API key first.";
+"notif.micDenied.title" = "Recording failed";
+"notif.micDenied.body" = "No microphone access. Please allow this app to use the microphone in System Settings.";
+"notif.recordFailed.title" = "Recording failed";
+"notif.recordFailed.body" = "Could not initialize the recording device.";
+"notif.empty.title" = "Nothing recognized";
+"notif.empty.body" = "No text was recognized in that recording.";
+"notif.insertFailed.title" = "Insertion failed";
+"notif.insertFailed.body" = "Could not insert text into the current app. Please allow this app under System Settings → Privacy & Security → Accessibility.";
+"notif.sttFailed.title" = "Transcription failed";
+
+/* Transcription errors */
+"error.missingAPIKey" = "No Google AI Studio API key configured. Add one in Settings.";
+"error.invalidAPIKey" = "The API key is invalid or revoked. Please check it in Settings.";
+"error.rateLimited" = "Free-tier rate limit reached. Please try again shortly.";
+"error.invalidAudioData" = "Could not read or encode the recorded audio file.";
+"error.requestFailed" = "Request failed: %@";
+"error.serverError" = "The server returned an error status code: %d";
+"error.emptyResponse" = "The service returned no content.";
+"error.parsingError" = "Failed to parse the response.";
+
+/* Prompt */
+"prompt.default" = "Transcribe this audio to text. The speech may mix Chinese and English; keep correct spelling and natural mixed-language formatting. Intelligently remove filler words, interjections, and meaningless repetitions (e.g. 'um', 'uh', '呃', '啊', '然后', '就是'). Output only the final transcribed text with no preamble, suffix, commentary, or markdown.";
+"prompt.hintPrefix" = "\nThe following domain terms may appear in the speech; spell them exactly as given: %@.";
