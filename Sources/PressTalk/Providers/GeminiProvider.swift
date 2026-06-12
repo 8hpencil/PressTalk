@@ -5,6 +5,12 @@ public final class GeminiProvider: TranscriptionProvider {
     private static let maxAttempts = 3
 
     private let session: URLSession
+    /// Injectable for tests; production reads the shared Configuration.
+    var apiKeyProvider: () -> String = { Configuration.shared.apiKey }
+    /// Injectable for tests so retry paths don't sleep for real.
+    var sleeper: (TimeInterval) async -> Void = { delay in
+        try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+    }
 
     public init() {
         let config = URLSessionConfiguration.ephemeral
@@ -14,6 +20,10 @@ public final class GeminiProvider: TranscriptionProvider {
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 120
         session = URLSession(configuration: config)
+    }
+
+    init(session: URLSession) {
+        self.session = session
     }
 
     // Request payload structures
@@ -63,7 +73,7 @@ public final class GeminiProvider: TranscriptionProvider {
     }
 
     public func transcribe(audioURL: URL, settings: ProviderSettings) async throws -> String {
-        let apiKey = Configuration.shared.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let apiKey = apiKeyProvider().trimmingCharacters(in: .whitespacesAndNewlines)
         guard !apiKey.isEmpty else {
             throw TranscriptionError.missingAPIKey
         }
@@ -139,7 +149,7 @@ public final class GeminiProvider: TranscriptionProvider {
             Log.stt.warning("Network error (code \((error as NSError).code)); retrying attempt \(attempt + 1) in \(retryDelay)s")
         }
 
-        try? await Task.sleep(nanoseconds: UInt64(retryDelay * 1_000_000_000))
+        await sleeper(retryDelay)
         return try await send(request, attempt: attempt + 1)
     }
 

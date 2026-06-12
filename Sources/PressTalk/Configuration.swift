@@ -23,10 +23,22 @@ public final class Configuration {
 
     public static let defaultModelName = "gemini-2.5-flash"
 
-    private let keychain = KeychainStore()
-    private let legacyKeychain = KeychainStore(service: AppIdentity.legacyKeychainService)
+    private let defaults: UserDefaults
+    private let keychain: SecretStore
+    private let legacyKeychain: SecretStore
+    private let legacyDefaultsDomain: String
 
-    private init() {
+    /// Injectable for tests; the app always goes through `shared`.
+    init(
+        defaults: UserDefaults = .standard,
+        keychain: SecretStore = KeychainStore(),
+        legacyKeychain: SecretStore = KeychainStore(service: AppIdentity.legacyKeychainService),
+        legacyDefaultsDomain: String = AppIdentity.legacyBundleID
+    ) {
+        self.defaults = defaults
+        self.keychain = keychain
+        self.legacyKeychain = legacyKeychain
+        self.legacyDefaultsDomain = legacyDefaultsDomain
         migrateLegacyDefaults()
     }
 
@@ -43,9 +55,9 @@ public final class Configuration {
                 return legacy
             }
             // U1 migration: drain the pre-keychain UserDefaults plaintext storage.
-            if let legacy = UserDefaults.standard.string(forKey: legacyAPIStoreKey), !legacy.isEmpty {
+            if let legacy = defaults.string(forKey: legacyAPIStoreKey), !legacy.isEmpty {
                 if keychain.setString(legacy, forAccount: apiKeyAccount) {
-                    UserDefaults.standard.removeObject(forKey: legacyAPIStoreKey)
+                    defaults.removeObject(forKey: legacyAPIStoreKey)
                 }
                 return legacy
             }
@@ -67,48 +79,48 @@ public final class Configuration {
         get {
             // `object(forKey:)` distinguishes "never set" from a stored 0 —
             // keycode 0 is the letter A and must stay bindable (B1).
-            guard UserDefaults.standard.object(forKey: hotkeyKeyCodeStoreKey) != nil else {
+            guard defaults.object(forKey: hotkeyKeyCodeStoreKey) != nil else {
                 return 2 // default: D
             }
-            return UserDefaults.standard.integer(forKey: hotkeyKeyCodeStoreKey)
+            return defaults.integer(forKey: hotkeyKeyCodeStoreKey)
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: hotkeyKeyCodeStoreKey)
+            defaults.set(newValue, forKey: hotkeyKeyCodeStoreKey)
         }
     }
 
     public var hotkeyModifiers: Int {
         get {
-            guard UserDefaults.standard.object(forKey: hotkeyModifiersStoreKey) != nil else {
+            guard defaults.object(forKey: hotkeyModifiersStoreKey) != nil else {
                 return Int(NSEvent.ModifierFlags.option.rawValue)
             }
-            return UserDefaults.standard.integer(forKey: hotkeyModifiersStoreKey)
+            return defaults.integer(forKey: hotkeyModifiersStoreKey)
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: hotkeyModifiersStoreKey)
+            defaults.set(newValue, forKey: hotkeyModifiersStoreKey)
         }
     }
 
     public var modelName: String {
         get {
-            let stored = UserDefaults.standard.string(forKey: modelNameStoreKey) ?? ""
+            let stored = defaults.string(forKey: modelNameStoreKey) ?? ""
             return stored.isEmpty ? Self.defaultModelName : stored
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: modelNameStoreKey)
+            defaults.set(newValue, forKey: modelNameStoreKey)
         }
     }
 
     /// Empty means "use PromptBuilder.defaultPrompt".
     public var customPrompt: String {
-        get { UserDefaults.standard.string(forKey: customPromptStoreKey) ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: customPromptStoreKey) }
+        get { defaults.string(forKey: customPromptStoreKey) ?? "" }
+        set { defaults.set(newValue, forKey: customPromptStoreKey) }
     }
 
     /// Raw hint-word list as entered by the user, one term per line.
     public var hintWordsRaw: String {
-        get { UserDefaults.standard.string(forKey: hintWordsStoreKey) ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: hintWordsStoreKey) }
+        get { defaults.string(forKey: hintWordsStoreKey) ?? "" }
+        set { defaults.set(newValue, forKey: hintWordsStoreKey) }
     }
 
     /// Parsed hint words: split on newlines and commas, trimmed, empties dropped.
@@ -123,8 +135,6 @@ public final class Configuration {
     /// Covers both the same defaults domain (swift run, in-place upgrades)
     /// and the old app bundle's separate domain (bundle ID changed in U11).
     private func migrateLegacyDefaults() {
-        let defaults = UserDefaults.standard
-
         for (oldKey, newKey) in legacyDefaultsKeyMap {
             if defaults.object(forKey: newKey) == nil, let value = defaults.object(forKey: oldKey) {
                 defaults.set(value, forKey: newKey)
@@ -132,7 +142,7 @@ public final class Configuration {
             defaults.removeObject(forKey: oldKey)
         }
 
-        if let legacyDomain = defaults.persistentDomain(forName: AppIdentity.legacyBundleID) {
+        if let legacyDomain = defaults.persistentDomain(forName: legacyDefaultsDomain) {
             for (oldKey, newKey) in legacyDefaultsKeyMap {
                 if defaults.object(forKey: newKey) == nil, let value = legacyDomain[oldKey] {
                     defaults.set(value, forKey: newKey)
@@ -144,7 +154,7 @@ public final class Configuration {
                let legacyKey = legacyDomain[legacyAPIStoreKey] as? String, !legacyKey.isEmpty {
                 keychain.setString(legacyKey, forAccount: apiKeyAccount)
             }
-            defaults.removePersistentDomain(forName: AppIdentity.legacyBundleID)
+            defaults.removePersistentDomain(forName: legacyDefaultsDomain)
         }
     }
 }

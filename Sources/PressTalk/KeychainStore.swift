@@ -13,8 +13,16 @@ enum AppIdentity {
     static let legacyBundleID = "com.kenny.gcp-dictation-service"
 }
 
+/// Secret storage abstraction so Configuration can be tested with an
+/// in-memory store instead of the real keychain.
+public protocol SecretStore {
+    func string(forAccount account: String) -> String?
+    @discardableResult func setString(_ value: String, forAccount account: String) -> Bool
+    @discardableResult func removeString(forAccount account: String) -> Bool
+}
+
 /// Minimal wrapper around Security.framework generic passwords.
-final class KeychainStore {
+final class KeychainStore: SecretStore {
     private let service: String
 
     init(service: String = AppIdentity.keychainService) {
