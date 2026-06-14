@@ -1,11 +1,11 @@
 /* 菜单栏状态 */
 "state.idle.tooltip" = "PressTalk：空闲（按住快捷键说话）";
 "state.recording.tooltip" = "PressTalk：正在录音…";
-"state.recordingWarning.tooltip" = "PressTalk：录音即将达到 5 分钟上限，到点自动停止";
+"state.recordingWarning.tooltip" = "PressTalk：录音即将达到上限，即将自动停止";
 "state.transcribing.tooltip" = "PressTalk：正在识别…";
 "state.idle.menu" = "状态：空闲";
 "state.recording.menu" = "状态：正在录音…";
-"state.recordingWarning.menu" = "状态：录音即将达上限（5 分钟自动停止）";
+"state.recordingWarning.menu" = "状态：录音即将达上限（即将自动停止）";
 "state.transcribing.menu" = "状态：正在识别…";
 
 /* 菜单项 */
@@ -26,7 +26,16 @@
 "settings.model.label" = "模型名称：";
 "settings.privacy.note" = "提示：免费层请求可能被 Google 用于模型训练，敏感内容请使用付费层。音频在转写完成后立即删除，绝不存储。";
 "settings.provider.label" = "转写服务：";
-"settings.provider.note" = "当前支持 Google Gemini（自备密钥）。";
+"settings.provider.gemini" = "Gemini（云端）";
+"settings.provider.whisper" = "本地 Whisper";
+"settings.whisper.privacy.note" = "音频完全在设备本地处理——无需网络，数据不离开您的 Mac。";
+"settings.whisperModel.label" = "模型：";
+"settings.whisperModel.download" = "下载模型";
+"settings.whisperModel.downloading" = "下载中…";
+"settings.whisperModel.ready" = "已就绪";
+"settings.whisperModel.useMirror" = "使用国内镜像（hf-mirror.com）";
+"settings.whisperModel.mirrorNote" = "如在中国大陆下载失败或速度慢，请开启此选项。";
+"settings.whisperModel.storageNote" = "模型缓存在 ~/Documents/huggingface/，可被多个应用共享。";
 "settings.prompt.label" = "自定义提示词（留空使用内置默认）：";
 "settings.prompt.note" = "随音频一起发送给模型的指令。";
 "settings.hintWords.label" = "专有名词词表（每行一个）：";
@@ -64,6 +73,7 @@
 "error.serverError" = "服务器返回了错误状态码: %d";
 "error.emptyResponse" = "服务没有返回任何内容。";
 "error.parsingError" = "解析返回数据失败。";
+"error.modelLoadFailed" = "本地模型加载失败：%@";
 
 /* 提示词 */
 "prompt.default" = "请把这段语音转写为文字。这段语音可能是中英文混合的，请保持正确的拼写和中英文混排格式。请智能地去除语气词、叹词以及重复和无意义的词语（例如：'呃'、'啊'、'然后'、'这个'、'那个'、'就是'、'um'、'uh'）。直接输出转写后的最终文本，不要包含任何旁白、前缀、后缀、说明或 markdown 格式。";

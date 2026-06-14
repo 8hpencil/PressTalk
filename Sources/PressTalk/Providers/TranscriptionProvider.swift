@@ -29,6 +29,7 @@ public enum TranscriptionError: Error, LocalizedError {
     case serverError(statusCode: Int)
     case emptyResponse
     case parsingError
+    case modelLoadFailed(underlying: Error)
 
     public var errorDescription: String? {
         switch self {
@@ -48,6 +49,8 @@ public enum TranscriptionError: Error, LocalizedError {
             return L("error.emptyResponse")
         case .parsingError:
             return L("error.parsingError")
+        case .modelLoadFailed(let err):
+            return String(format: L("error.modelLoadFailed"), err.localizedDescription)
         }
     }
 
@@ -62,6 +65,7 @@ public enum TranscriptionError: Error, LocalizedError {
         case .serverError(let code): return "serverError(\(code))"
         case .emptyResponse: return "emptyResponse"
         case .parsingError: return "parsingError"
+        case .modelLoadFailed: return "modelLoadFailed"
         }
     }
 }

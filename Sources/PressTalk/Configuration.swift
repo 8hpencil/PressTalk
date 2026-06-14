@@ -1,6 +1,11 @@
 import Foundation
 import Cocoa
 
+public enum ProviderType: String {
+    case gemini = "gemini"
+    case whisper = "whisper"
+}
+
 public final class Configuration {
     public static let shared = Configuration()
 
@@ -9,6 +14,9 @@ public final class Configuration {
     private let modelNameStoreKey = "PressTalk_ModelName"
     private let customPromptStoreKey = "PressTalk_CustomPrompt"
     private let hintWordsStoreKey = "PressTalk_HintWords"
+    private let providerTypeStoreKey = "PressTalk_ProviderType"
+    private let whisperModelStoreKey = "PressTalk_WhisperModel"
+    private let whisperUseMirrorStoreKey = "PressTalk_WhisperUseMirror"
     private let apiKeyAccount = "GeminiAPIKey"
 
     /// Legacy GCPDictation-era UserDefaults keys (U11 migration only).
@@ -22,6 +30,7 @@ public final class Configuration {
     ]
 
     public static let defaultModelName = "gemini-2.5-flash"
+    public static let defaultWhisperModel = "base"
 
     private let defaults: UserDefaults
     private let keychain: SecretStore
@@ -130,6 +139,39 @@ public final class Configuration {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
     }
+
+    public var transcriptionProvider: ProviderType {
+        get { ProviderType(rawValue: defaults.string(forKey: providerTypeStoreKey) ?? "") ?? .gemini }
+        set { defaults.set(newValue.rawValue, forKey: providerTypeStoreKey) }
+    }
+
+    /// Short model IDs used in earlier builds that have been replaced with precise
+    /// folder names to avoid HuggingFace multi-match errors.
+    private static let whisperModelMigrations: [String: String] = [
+        "large-v3":       "openai_whisper-large-v3-v20240930_626MB",
+        "large-v3-turbo": "openai_whisper-large-v3-v20240930_turbo_632MB",
+    ]
+
+    public var whisperModelName: String {
+        get {
+            var stored = defaults.string(forKey: whisperModelStoreKey) ?? ""
+            if stored.isEmpty { stored = Self.defaultWhisperModel }
+            if let migrated = Self.whisperModelMigrations[stored] {
+                defaults.set(migrated, forKey: whisperModelStoreKey)
+                return migrated
+            }
+            return stored
+        }
+        set { defaults.set(newValue, forKey: whisperModelStoreKey) }
+    }
+
+    /// When true, model downloads go through hf-mirror.com instead of huggingface.co.
+    public var whisperUseMirror: Bool {
+        get { defaults.bool(forKey: whisperUseMirrorStoreKey) }
+        set { defaults.set(newValue, forKey: whisperUseMirrorStoreKey) }
+    }
+
+    public static let huggingFaceMirrorEndpoint = "https://hf-mirror.com"
 
     /// One-time U11 migration of GCPDictation_* defaults to PressTalk_*.
     /// Covers both the same defaults domain (swift run, in-place upgrades)

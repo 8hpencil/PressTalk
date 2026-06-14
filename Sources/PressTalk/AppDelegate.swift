@@ -8,7 +8,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private let audioRecorder = AudioRecorder()
     private let textInsertionEngine = TextInsertionEngine()
     private let stateMachine = DictationStateMachine()
-    private let provider: TranscriptionProvider = GeminiProvider()
+    private var provider: TranscriptionProvider = GeminiProvider()
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         // 1. Setup Menu Bar Status Item
@@ -25,15 +25,17 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         checkAccessibilityPermission()
 
         // 5. Initialize Hotkey Manager and bind events; re-register whenever
-        // settings change the hotkey (B3).
+        // settings change the hotkey (B3). Also refresh provider on settings save.
         hotkeyManager = HotkeyManager()
         setupHotkeyBindings()
+        refreshProvider()
         NotificationCenter.default.addObserver(
             forName: .hotkeyConfigurationChanged,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             self?.hotkeyManager?.registerHotkey()
+            self?.refreshProvider()
         }
 
         // 6. Recording duration cap (U4): warn near the limit, then auto-stop
@@ -45,10 +47,20 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.stopDictationAndTranscribe()
         }
 
-        // 7. Check if API key is configured
-        if Configuration.shared.apiKey.isEmpty {
+        // 7. Check if API key is configured (Gemini-only concern)
+        if Configuration.shared.transcriptionProvider == .gemini && Configuration.shared.apiKey.isEmpty {
             sendNotification(title: L("notif.welcome.title"), body: L("notif.welcome.body"))
         }
+    }
+
+    private func refreshProvider() {
+        switch Configuration.shared.transcriptionProvider {
+        case .gemini:
+            provider = GeminiProvider()
+        case .whisper:
+            provider = WhisperProvider.shared
+        }
+        Log.app.info("Active provider: \(Configuration.shared.transcriptionProvider.rawValue)")
     }
 
     private func checkAccessibilityPermission() {
@@ -68,8 +80,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func startDictation() {
-        // Guard: check if API key is configured
-        if Configuration.shared.apiKey.isEmpty {
+        // Guard: check if API key is configured (Gemini only)
+        if Configuration.shared.transcriptionProvider == .gemini && Configuration.shared.apiKey.isEmpty {
             sendNotification(title: L("notif.noKey.title"), body: L("notif.noKey.body"))
             return
         }
@@ -90,8 +102,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         case .started(let generation):
             menuBarController?.updateState(.recording)
-            if audioRecorder.startRecording(format: provider.preferredAudioFormat) != nil {
-                Log.audio.info("Recording started (generation \(generation))")
+            // Local Whisper has no cloud size limit; allow up to 10 minutes.
+            let maxDuration: TimeInterval = Configuration.shared.transcriptionProvider == .whisper ? 600 : 300
+            if audioRecorder.startRecording(format: provider.preferredAudioFormat, maxDuration: maxDuration) != nil {
+                Log.audio.info("Recording started (generation \(generation), maxDuration \(Int(maxDuration))s)")
             } else {
                 stateMachine.recordingFailed(generation: generation)
                 menuBarController?.updateState(.idle)
@@ -120,8 +134,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Single transcription entry point (U5 Patterns): the state machine owns
     /// everything around it; providers only ever change the inside.
     private func transcribe(_ audioURL: URL, generation: Int) {
+        let modelName: String
+        switch Configuration.shared.transcriptionProvider {
+        case .gemini:  modelName = Configuration.shared.modelName
+        case .whisper: modelName = Configuration.shared.whisperModelName
+        }
         let settings = ProviderSettings(
-            modelName: Configuration.shared.modelName,
+            modelName: modelName,
             prompt: PromptBuilder.build(
                 customPrompt: Configuration.shared.customPrompt,
                 hintWords: Configuration.shared.hintWords
@@ -131,12 +150,19 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         Task { @MainActor [weak self] in
             guard let self = self else { return }
 
+            appTrace("provider type=\(Configuration.shared.transcriptionProvider.rawValue) model=\(settings.modelName)")
+            appTrace("audioURL exists=\(FileManager.default.fileExists(atPath: audioURL.path)) size=\((try? FileManager.default.attributesOfItem(atPath: audioURL.path)[.size] as? Int) ?? nil as Int? ?? -1)")
+
             let result: Result<String, TranscriptionError>
             do {
-                result = .success(try await self.provider.transcribe(audioURL: audioURL, settings: settings))
+                let text = try await self.provider.transcribe(audioURL: audioURL, settings: settings)
+                appTrace("provider returned text length=\(text.count) preview='\(String(text.prefix(50)))'")
+                result = .success(text)
             } catch let error as TranscriptionError {
+                appTrace("TranscriptionError: \(error.caseName) — \(error.localizedDescription)")
                 result = .failure(error)
             } catch {
+                appTrace("Unknown error: \(error)")
                 result = .failure(.requestFailed(underlying: error))
             }
 
@@ -146,11 +172,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             // Late callbacks from an older generation must not touch UI (B5).
             guard self.stateMachine.transcriptionCompleted(generation: generation) else {
                 Log.app.info("Discarding stale transcription callback (generation \(generation))")
+                appTrace("stale generation \(generation), discarding")
                 return
             }
 
             switch result {
             case .success(let transcribedText):
+                appTrace("success, inserting \(transcribedText.count) chars")
                 Log.app.info("Transcription succeeded (\(transcribedText.count) characters)")
                 if transcribedText.isEmpty {
                     // E2: don't silently swallow empty results.
@@ -194,6 +222,20 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                 Log.app.error("Notification authorization failed")
             } else {
                 Log.app.info("Notification permission status: \(granted)")
+            }
+        }
+    }
+
+    func appTrace(_ msg: String) {
+        let line = "\(Date()): [AppDelegate] \(msg)\n"
+        let path = "/tmp/pt_trace.txt"
+        if let data = line.data(using: .utf8) {
+            if let handle = try? FileHandle(forWritingTo: URL(fileURLWithPath: path)) {
+                handle.seekToEndOfFile()
+                handle.write(data)
+                try? handle.close()
+            } else {
+                try? data.write(to: URL(fileURLWithPath: path))
             }
         }
     }

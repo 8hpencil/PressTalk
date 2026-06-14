@@ -1,11 +1,11 @@
 /* Menu bar states */
 "state.idle.tooltip" = "PressTalk: idle (hold the hotkey and speak)";
 "state.recording.tooltip" = "PressTalk: recording…";
-"state.recordingWarning.tooltip" = "PressTalk: nearing the 5-minute recording cap, will auto-stop";
+"state.recordingWarning.tooltip" = "PressTalk: nearing the recording limit, will auto-stop soon";
 "state.transcribing.tooltip" = "PressTalk: transcribing…";
 "state.idle.menu" = "Status: idle";
 "state.recording.menu" = "Status: recording…";
-"state.recordingWarning.menu" = "Status: nearing recording cap (auto-stop at 5 min)";
+"state.recordingWarning.menu" = "Status: nearing recording limit (auto-stop soon)";
 "state.transcribing.menu" = "Status: transcribing…";
 
 /* Menu items */
@@ -26,7 +26,16 @@
 "settings.model.label" = "Model name:";
 "settings.privacy.note" = "Note: free-tier requests may be used by Google for model training. Use a paid tier for sensitive content. Audio is deleted right after transcription and never stored.";
 "settings.provider.label" = "Provider:";
-"settings.provider.note" = "Currently supports Google Gemini (bring your own key).";
+"settings.provider.gemini" = "Gemini (Cloud)";
+"settings.provider.whisper" = "Local Whisper";
+"settings.whisper.privacy.note" = "Audio is processed entirely on-device — no internet required, no data leaves your Mac.";
+"settings.whisperModel.label" = "Model:";
+"settings.whisperModel.download" = "Download Model";
+"settings.whisperModel.downloading" = "Downloading…";
+"settings.whisperModel.ready" = "Ready";
+"settings.whisperModel.useMirror" = "Use Chinese mirror (hf-mirror.com)";
+"settings.whisperModel.mirrorNote" = "Enable if downloads fail or are slow in mainland China.";
+"settings.whisperModel.storageNote" = "Models are cached in ~/Documents/huggingface/ and shared across apps.";
 "settings.prompt.label" = "Custom prompt (empty = built-in default):";
 "settings.prompt.note" = "Instructions sent to the model alongside your audio.";
 "settings.hintWords.label" = "Hint words (one per line):";
@@ -64,6 +73,7 @@
 "error.serverError" = "The server returned an error status code: %d";
 "error.emptyResponse" = "The service returned no content.";
 "error.parsingError" = "Failed to parse the response.";
+"error.modelLoadFailed" = "Failed to load the local model: %@";
 
 /* Prompt */
 "prompt.default" = "Transcribe this audio to text. The speech may mix Chinese and English; keep correct spelling and natural mixed-language formatting. Intelligently remove filler words, interjections, and meaningless repetitions (e.g. 'um', 'uh', '呃', '啊', '然后', '就是'). Output only the final transcribed text with no preamble, suffix, commentary, or markdown.";

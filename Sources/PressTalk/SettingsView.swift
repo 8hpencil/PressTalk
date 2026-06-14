@@ -1,6 +1,7 @@
 import SwiftUI
 import ServiceManagement
 import HotKey
+@preconcurrency import WhisperKit
 
 public extension Notification.Name {
     /// Posted after settings are saved so HotkeyManager re-registers (B3).
@@ -19,6 +20,15 @@ struct SettingsView: View {
     @State private var isCapturingHotkey = false
     @State private var keyMonitor: Any?
     @State private var showSavedAlert = false
+    @State private var selectedProvider: ProviderType = Configuration.shared.transcriptionProvider
+    @State private var whisperModel: String = Configuration.shared.whisperModelName
+    @State private var whisperUseMirror: Bool = Configuration.shared.whisperUseMirror
+    @State private var downloadProgress: Double = 0
+    @State private var isDownloading: Bool = false
+    @State private var downloadError: String?
+    @State private var downloadedModels: Set<String> = {
+        Set(WhisperProvider.supportedModels.map(\.modelId).filter { WhisperProvider.savedModelPath(for: $0) != nil })
+    }()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -43,7 +53,7 @@ struct SettingsView: View {
             footer
                 .padding(16)
         }
-        .frame(width: 560, height: 640)
+        .frame(width: 560, height: 700)
         .onDisappear { endHotkeyCapture() }
     }
 
@@ -71,42 +81,27 @@ struct SettingsView: View {
                 .font(.title3)
                 .fontWeight(.semibold)
 
-            Text(L("settings.apiKey.label"))
-                .fontWeight(.medium)
-            SecureField(L("settings.apiKey.placeholder"), text: $apiKey)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(.body, design: .monospaced))
-            HStack {
-                Link(L("settings.apiKey.getKey"), destination: URL(string: "https://aistudio.google.com/")!)
-                    .font(.caption)
-                Spacer()
-            }
-
-            Text(L("settings.privacy.note"))
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
+            // Provider picker
             HStack {
                 Text(L("settings.provider.label"))
                     .fontWeight(.medium)
-                // Only implemented providers are listed (no empty-shell
-                // options); whisper.cpp joins in v1.1 (U7).
-                Text("Gemini")
-                Text(L("settings.provider.note"))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Picker("", selection: $selectedProvider) {
+                    Text(L("settings.provider.gemini")).tag(ProviderType.gemini)
+                    Text(L("settings.provider.whisper")).tag(ProviderType.whisper)
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 280)
             }
 
-            HStack {
-                Text(L("settings.model.label"))
-                    .fontWeight(.medium)
-                TextField(Configuration.defaultModelName, text: $modelName)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(.body, design: .monospaced))
-                    .frame(maxWidth: 260)
+            Divider().padding(.vertical, 2)
+
+            if selectedProvider == .gemini {
+                geminiFields
+            } else {
+                whisperFields
             }
 
+            // Shared: prompt + hint words apply to both providers
             Text(L("settings.prompt.label"))
                 .fontWeight(.medium)
             TextEditor(text: $customPrompt)
@@ -126,6 +121,128 @@ struct SettingsView: View {
             Text(L("settings.hintWords.note"))
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+
+    private var geminiFields: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(L("settings.apiKey.label"))
+                .fontWeight(.medium)
+            SecureField(L("settings.apiKey.placeholder"), text: $apiKey)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
+            HStack {
+                Link(L("settings.apiKey.getKey"), destination: URL(string: "https://aistudio.google.com/")!)
+                    .font(.caption)
+                Spacer()
+            }
+
+            Text(L("settings.privacy.note"))
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack {
+                Text(L("settings.model.label"))
+                    .fontWeight(.medium)
+                TextField(Configuration.defaultModelName, text: $modelName)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(.body, design: .monospaced))
+                    .frame(maxWidth: 260)
+            }
+        }
+    }
+
+    private var whisperFields: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(L("settings.whisper.privacy.note"))
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L("settings.whisperModel.label"))
+                        .fontWeight(.medium)
+                    Picker("", selection: $whisperModel) {
+                        ForEach(WhisperProvider.supportedModels, id: \.modelId) { entry in
+                            HStack {
+                                Text(entry.displayName)
+                                Text(entry.approximateSize)
+                                    .foregroundColor(.secondary)
+                            }
+                            .tag(entry.modelId)
+                        }
+                    }
+                    .frame(maxWidth: 260)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 6) {
+                    if downloadedModels.contains(whisperModel) {
+                        Label(L("settings.whisperModel.ready"), systemImage: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.subheadline)
+                    } else if isDownloading {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text(L("settings.whisperModel.downloading"))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            ProgressView(value: downloadProgress)
+                                .frame(width: 120)
+                            Text(String(format: "%.0f%%", downloadProgress * 100))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        Button(L("settings.whisperModel.download")) {
+                            startDownload()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    if let err = downloadError {
+                        Text(err)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: 160, alignment: .trailing)
+                    }
+                }
+            }
+
+            Toggle(L("settings.whisperModel.useMirror"), isOn: $whisperUseMirror)
+            Text(L("settings.whisperModel.mirrorNote"))
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .onChange(of: whisperModel) { _, _ in
+                    downloadError = nil
+                }
+
+            Text(L("settings.whisperModel.storageNote"))
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func startDownload() {
+        isDownloading = true
+        downloadError = nil
+        downloadProgress = 0
+        let modelId = whisperModel
+        // Clear stale download state so a failed/corrupted download gets retried fresh.
+        WhisperProvider.clearDownloadState(modelId)
+        Task {
+            do {
+                try await WhisperProvider.downloadModel(modelId: modelId) { @MainActor fraction in
+                    downloadProgress = fraction
+                }
+                downloadedModels.insert(modelId)
+            } catch {
+                downloadError = error.localizedDescription
+            }
+            isDownloading = false
         }
     }
 
@@ -168,7 +285,7 @@ struct SettingsView: View {
                 .fontWeight(.semibold)
 
             Toggle(L("settings.launchAtLogin"), isOn: $launchAtLogin)
-                .onChange(of: launchAtLogin) { enabled in
+                .onChange(of: launchAtLogin) { _, enabled in
                     do {
                         if enabled {
                             try SMAppService.mainApp.register()
@@ -255,6 +372,9 @@ struct SettingsView: View {
         Configuration.shared.hintWordsRaw = hintWordsRaw
         Configuration.shared.hotkeyKeyCode = hotkeyKeyCode
         Configuration.shared.hotkeyModifiers = hotkeyModifiers
+        Configuration.shared.transcriptionProvider = selectedProvider
+        Configuration.shared.whisperModelName = whisperModel
+        Configuration.shared.whisperUseMirror = whisperUseMirror
 
         // Re-register the hotkey right away (B3: settings used to be display-only).
         NotificationCenter.default.post(name: .hotkeyConfigurationChanged, object: nil)

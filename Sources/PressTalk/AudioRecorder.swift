@@ -2,11 +2,7 @@ import Foundation
 import AVFoundation
 
 public final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
-    /// Gemini inline requests are capped at 20 MB: 16 kHz/16-bit/mono ≈ 32 KB/s,
-    /// base64 inflates ×4/3 ≈ 2.56 MB/min, so ~7.5 min hits the cap.
-    /// 5 minutes leaves comfortable headroom (KTD10).
-    public static let maxRecordingDuration: TimeInterval = 300
-    /// Warn this many seconds before the hard stop (i.e. at 4:30).
+    /// Warn this many seconds before the hard stop.
     public static let warningLeadTime: TimeInterval = 30
 
     /// Fired once per recording when `maxRecordingDuration - warningLeadTime` elapses.
@@ -19,12 +15,16 @@ public final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     private var fileURL: URL?
     private var warningTimer: Timer?
     private var limitTimer: Timer?
+    private var currentMaxDuration: TimeInterval = 300
 
     public var isRecording: Bool {
         return recorder?.isRecording ?? false
     }
 
-    public func startRecording(format: AudioFormatPreference = .standard) -> URL? {
+    /// - Parameter maxDuration: Hard cap in seconds. Gemini inline limit → 300 s;
+    ///   local Whisper has no cloud constraint → 600 s.
+    public func startRecording(format: AudioFormatPreference = .standard, maxDuration: TimeInterval = 300) -> URL? {
+        currentMaxDuration = maxDuration
         let tempDirectory = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
         let filename = "presstalk_\(UUID().uuidString).wav"
         let audioURL = tempDirectory.appendingPathComponent(filename)
@@ -85,15 +85,16 @@ public final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     }
 
     private func startDurationTimers() {
+        let max = currentMaxDuration
         warningTimer = Timer.scheduledTimer(
-            withTimeInterval: Self.maxRecordingDuration - Self.warningLeadTime,
+            withTimeInterval: max - Self.warningLeadTime,
             repeats: false
         ) { [weak self] _ in
             Log.audio.info("Recording approaching duration limit")
             self?.onDurationWarning?()
         }
         limitTimer = Timer.scheduledTimer(
-            withTimeInterval: Self.maxRecordingDuration,
+            withTimeInterval: max,
             repeats: false
         ) { [weak self] _ in
             Log.audio.info("Recording duration limit reached; auto-stopping")
