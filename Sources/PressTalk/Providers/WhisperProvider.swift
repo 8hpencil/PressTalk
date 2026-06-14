@@ -67,33 +67,21 @@ public actor WhisperProvider: TranscriptionProvider {
         options.language = "zh"
         options.detectLanguage = false
         options.skipSpecialTokens = true
-        // Tokenize and pass the user's prompt as conditioning context.
-        // Whisper uses these tokens as a decoder prefill to set language/style/task
-        // expectations before transcribing — this helps prevent hallucinations and
-        // improves accuracy for dictation-style input.
-        if !settings.prompt.isEmpty, let tokenizer = pipe.tokenizer {
-            var promptTokens = tokenizer.encode(text: settings.prompt)
-            if !promptTokens.isEmpty {
-                // Whisper context window is limited; cap prompt to avoid
-                // consuming too much of the 224-token prefill budget.
-                let maxPromptTokens = 200
-                if promptTokens.count > maxPromptTokens {
-                    promptTokens = Array(promptTokens.prefix(maxPromptTokens))
-                }
-                options.promptTokens = promptTokens
-                trace("conditioning prompt: \(promptTokens.count) tokens")
-            }
-        }
 
-        // Quality gates — segments below these thresholds trigger a retry
-        // with incrementally higher temperature (temperature fallback).
+        // Quality gate: reject segments where the model has low average
+        // log-probability (uncertain). Default is -1.0; -0.7 is a reasonable
+        // strictness for Chinese without being overly aggressive.
         options.logProbThreshold = -0.7
-        options.compressionRatioThreshold = 2.0  // stricter than default 2.4
-        options.firstTokenLogProbThreshold = -1.0 // stricter than default -1.5
-        // Temperature fallback: when quality gates fail, retry at higher
-        // temperature to produce more diverse candidates.
+        // Temperature fallback: one retry at T=0.2 if the first greedy pass
+        // fails the quality gate. More retries multiply latency × passes.
         options.temperatureIncrementOnFallback = 0.2
-        options.temperatureFallbackCount = 3
+        options.temperatureFallbackCount = 1
+
+        // Note: We intentionally do NOT set promptTokens. Whisper's
+        // conditioning prompt mechanism expects natural text (previous
+        // transcription context) — LLM-style instruction prompts confuse
+        // the decoder and degrade quality. The language="zh" setting is
+        // sufficient to establish Chinese dictation context.
 
         let results: [TranscriptionResult]
         do {
@@ -101,7 +89,7 @@ public actor WhisperProvider: TranscriptionProvider {
             trace("transcribe returned \(results.count) results")
         } catch {
             trace("transcribe threw: \(error)")
-            throw TranscriptionError.modelLoadFailed(underlying: error)
+            throw TranscriptionError.requestFailed(underlying: error)
         }
 
         for (i, r) in results.enumerated() {
@@ -111,7 +99,13 @@ public actor WhisperProvider: TranscriptionProvider {
         let text = results.compactMap { $0.text }
                           .joined(separator: " ")
                           .trimmingCharacters(in: .whitespacesAndNewlines)
-        trace("joined text='\(text)' length=\(text.count)")
+        trace("joined text length=\(text.count) preview='\(text.prefix(80))'")
+        if results.contains(where: { !$0.text.isEmpty }) && text.isEmpty {
+            trace("WARNING: non-empty segments produced empty joined text (likely separator issue)")
+        }
+        if results.allSatisfy({ $0.text.isEmpty || $0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+            trace("WARNING: all segments returned empty text — possible quality-gate rejection or silent audio")
+        }
 
         if WhisperProvider.isHallucination(text) {
             trace("hallucination detected, discarding: '\(text)'")
