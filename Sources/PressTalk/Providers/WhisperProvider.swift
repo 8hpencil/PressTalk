@@ -67,9 +67,33 @@ public actor WhisperProvider: TranscriptionProvider {
         options.language = "zh"
         options.detectLanguage = false
         options.skipSpecialTokens = true
-        // Stricter quality gate: reject segments where the model has low average log-probability.
-        // Default is -1.0; -0.7 discards uncertain outputs before they reach the user.
+        // Tokenize and pass the user's prompt as conditioning context.
+        // Whisper uses these tokens as a decoder prefill to set language/style/task
+        // expectations before transcribing — this helps prevent hallucinations and
+        // improves accuracy for dictation-style input.
+        if !settings.prompt.isEmpty, let tokenizer = pipe.tokenizer {
+            var promptTokens = tokenizer.encode(text: settings.prompt)
+            if !promptTokens.isEmpty {
+                // Whisper context window is limited; cap prompt to avoid
+                // consuming too much of the 224-token prefill budget.
+                let maxPromptTokens = 200
+                if promptTokens.count > maxPromptTokens {
+                    promptTokens = Array(promptTokens.prefix(maxPromptTokens))
+                }
+                options.promptTokens = promptTokens
+                trace("conditioning prompt: \(promptTokens.count) tokens")
+            }
+        }
+
+        // Quality gates — segments below these thresholds trigger a retry
+        // with incrementally higher temperature (temperature fallback).
         options.logProbThreshold = -0.7
+        options.compressionRatioThreshold = 2.0  // stricter than default 2.4
+        options.firstTokenLogProbThreshold = -1.0 // stricter than default -1.5
+        // Temperature fallback: when quality gates fail, retry at higher
+        // temperature to produce more diverse candidates.
+        options.temperatureIncrementOnFallback = 0.2
+        options.temperatureFallbackCount = 3
 
         let results: [TranscriptionResult]
         do {
