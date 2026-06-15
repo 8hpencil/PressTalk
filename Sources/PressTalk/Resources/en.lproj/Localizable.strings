@@ -78,3 +78,20 @@
 /* Prompt */
 "prompt.default" = "Transcribe this audio to text. The speech may mix Chinese and English; keep correct spelling and natural mixed-language formatting. Intelligently remove filler words, interjections, and meaningless repetitions (e.g. 'um', 'uh', '呃', '啊', '然后', '就是'). Output only the final transcribed text with no preamble, suffix, commentary, or markdown.";
 "prompt.hintPrefix" = "\nThe following domain terms may appear in the speech; spell them exactly as given: %@.";
+
+/* GCP STT */
+"settings.provider.gcpChirp" = "Google Cloud STT (Chirp)";
+"settings.gcp.apiKey.label" = "Google Cloud API key:";
+"settings.gcp.apiKey.placeholder" = "Enter your API key (AIzaSy…)";
+"settings.gcp.projectId.label" = "GCP Project ID:";
+"settings.gcp.projectId.placeholder" = "e.g. my-speech-project-12345";
+"settings.gcp.location.label" = "Location:";
+"settings.gcp.modelName.label" = "Model name:";
+"settings.gcp.privacy.note" = "Note: Audio is sent directly to your Google Cloud project's Speech-to-Text API and released immediately on completion.";
+
+"notif.gcp.welcome.body" = "Welcome! Click the menu bar icon and open Settings to configure your Google Cloud API key and Project ID.";
+"notif.gcp.noKey.title" = "Cannot start recording";
+"notif.gcp.noKey.body" = "Please configure your Google Cloud API key first.";
+"notif.gcp.noProjectId.title" = "Cannot start recording";
+"notif.gcp.noProjectId.body" = "Please configure your GCP Project ID first.";
+"error.gcp.missingProjectId" = "No GCP Project ID configured. Add one in Settings.";

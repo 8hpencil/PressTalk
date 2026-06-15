@@ -78,3 +78,20 @@
 /* 提示词 */
 "prompt.default" = "请把这段语音转写为文字。这段语音可能是中英文混合的，请保持正确的拼写和中英文混排格式。请智能地去除语气词、叹词以及重复和无意义的词语（例如：'呃'、'啊'、'然后'、'这个'、'那个'、'就是'、'um'、'uh'）。直接输出转写后的最终文本，不要包含任何旁白、前缀、后缀、说明或 markdown 格式。";
 "prompt.hintPrefix" = "\n以下专有名词可能在语音中出现，请按照给出的写法拼写：%@。";
+
+/* GCP STT */
+"settings.provider.gcpChirp" = "Google Cloud STT (Chirp)";
+"settings.gcp.apiKey.label" = "Google Cloud API 密钥：";
+"settings.gcp.apiKey.placeholder" = "输入您的 API 密钥 (AIzaSy…)";
+"settings.gcp.projectId.label" = "GCP 项目 ID (Project ID)：";
+"settings.gcp.projectId.placeholder" = "例如：my-speech-project-12345";
+"settings.gcp.location.label" = "区域 (Location)：";
+"settings.gcp.modelName.label" = "模型名称：";
+"settings.gcp.privacy.note" = "提示：音频直接传输到您的 Google Cloud 项目的 Speech-to-Text API 服务，转写完成后本地和云端即刻释放。";
+
+"notif.gcp.welcome.body" = "欢迎使用！请在菜单栏点击图标并打开设置，配置您的 Google Cloud API 密钥与项目 ID。";
+"notif.gcp.noKey.title" = "无法开始录音";
+"notif.gcp.noKey.body" = "请先配置 Google Cloud API 密钥。";
+"notif.gcp.noProjectId.title" = "无法开始录音";
+"notif.gcp.noProjectId.body" = "请先配置 GCP 项目 ID。";
+"error.gcp.missingProjectId" = "未配置 GCP 项目 ID，请在设置中配置。";

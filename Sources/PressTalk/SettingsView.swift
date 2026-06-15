@@ -21,6 +21,10 @@ struct SettingsView: View {
     @State private var keyMonitor: Any?
     @State private var showSavedAlert = false
     @State private var selectedProvider: ProviderType = Configuration.shared.transcriptionProvider
+    @State private var gcpApiKey: String = Configuration.shared.gcpApiKey
+    @State private var gcpProjectId: String = Configuration.shared.gcpProjectId
+    @State private var gcpLocation: String = Configuration.shared.gcpLocation
+    @State private var gcpModelName: String = Configuration.shared.gcpModelName
     @State private var whisperModel: String = Configuration.shared.whisperModelName
     @State private var whisperUseMirror: Bool = Configuration.shared.whisperUseMirror
     @State private var downloadProgress: Double = 0
@@ -87,6 +91,7 @@ struct SettingsView: View {
                     .fontWeight(.medium)
                 Picker("", selection: $selectedProvider) {
                     Text(L("settings.provider.gemini")).tag(ProviderType.gemini)
+                    Text(L("settings.provider.gcpChirp")).tag(ProviderType.gcpChirp)
                     Text(L("settings.provider.whisper")).tag(ProviderType.whisper)
                 }
                 .pickerStyle(.segmented)
@@ -97,6 +102,8 @@ struct SettingsView: View {
 
             if selectedProvider == .gemini {
                 geminiFields
+            } else if selectedProvider == .gcpChirp {
+                gcpChirpFields
             } else {
                 whisperFields
             }
@@ -150,6 +157,45 @@ struct SettingsView: View {
                     .font(.system(.body, design: .monospaced))
                     .frame(maxWidth: 260)
             }
+        }
+    }
+
+    private var gcpChirpFields: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(L("settings.gcp.apiKey.label"))
+                .fontWeight(.medium)
+            SecureField(L("settings.gcp.apiKey.placeholder"), text: $gcpApiKey)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
+
+            Text(L("settings.gcp.projectId.label"))
+                .fontWeight(.medium)
+            TextField(L("settings.gcp.projectId.placeholder"), text: $gcpProjectId)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L("settings.gcp.location.label"))
+                        .fontWeight(.medium)
+                    TextField("us-central1", text: $gcpLocation)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(.body, design: .monospaced))
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L("settings.gcp.modelName.label"))
+                        .fontWeight(.medium)
+                    TextField(Configuration.defaultGcpModelName, text: $gcpModelName)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(.body, design: .monospaced))
+                }
+            }
+
+            Text(L("settings.gcp.privacy.note"))
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -373,6 +419,10 @@ struct SettingsView: View {
         Configuration.shared.hotkeyKeyCode = hotkeyKeyCode
         Configuration.shared.hotkeyModifiers = hotkeyModifiers
         Configuration.shared.transcriptionProvider = selectedProvider
+        Configuration.shared.gcpApiKey = gcpApiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        Configuration.shared.gcpProjectId = gcpProjectId.trimmingCharacters(in: .whitespacesAndNewlines)
+        Configuration.shared.gcpLocation = gcpLocation.trimmingCharacters(in: .whitespacesAndNewlines)
+        Configuration.shared.gcpModelName = gcpModelName.trimmingCharacters(in: .whitespacesAndNewlines)
         Configuration.shared.whisperModelName = whisperModel
         Configuration.shared.whisperUseMirror = whisperUseMirror
 

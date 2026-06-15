@@ -47,9 +47,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.stopDictationAndTranscribe()
         }
 
-        // 7. Check if API key is configured (Gemini-only concern)
+        // 7. Check if API key is configured
         if Configuration.shared.transcriptionProvider == .gemini && Configuration.shared.apiKey.isEmpty {
             sendNotification(title: L("notif.welcome.title"), body: L("notif.welcome.body"))
+        } else if Configuration.shared.transcriptionProvider == .gcpChirp && (Configuration.shared.gcpApiKey.isEmpty || Configuration.shared.gcpProjectId.isEmpty) {
+            sendNotification(title: L("notif.welcome.title"), body: L("notif.gcp.welcome.body"))
         }
     }
 
@@ -59,6 +61,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             provider = GeminiProvider()
         case .whisper:
             provider = WhisperProvider.shared
+        case .gcpChirp:
+            provider = GCPChirpProvider()
         }
         Log.app.info("Active provider: \(Configuration.shared.transcriptionProvider.rawValue)")
     }
@@ -80,10 +84,20 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func startDictation() {
-        // Guard: check if API key is configured (Gemini only)
+        // Guard: check if API key is configured
         if Configuration.shared.transcriptionProvider == .gemini && Configuration.shared.apiKey.isEmpty {
             sendNotification(title: L("notif.noKey.title"), body: L("notif.noKey.body"))
             return
+        }
+        if Configuration.shared.transcriptionProvider == .gcpChirp {
+            if Configuration.shared.gcpApiKey.isEmpty {
+                sendNotification(title: L("notif.gcp.noKey.title"), body: L("notif.gcp.noKey.body"))
+                return
+            }
+            if Configuration.shared.gcpProjectId.isEmpty {
+                sendNotification(title: L("notif.gcp.noProjectId.title"), body: L("notif.gcp.noProjectId.body"))
+                return
+            }
         }
 
         // Guard: Check microphone permissions
@@ -136,8 +150,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func transcribe(_ audioURL: URL, generation: Int) {
         let modelName: String
         switch Configuration.shared.transcriptionProvider {
-        case .gemini:  modelName = Configuration.shared.modelName
-        case .whisper: modelName = Configuration.shared.whisperModelName
+        case .gemini:   modelName = Configuration.shared.modelName
+        case .whisper:  modelName = Configuration.shared.whisperModelName
+        case .gcpChirp: modelName = Configuration.shared.gcpModelName
         }
         let settings = ProviderSettings(
             modelName: modelName,

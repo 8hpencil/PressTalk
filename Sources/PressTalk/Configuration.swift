@@ -4,6 +4,7 @@ import Cocoa
 public enum ProviderType: String {
     case gemini = "gemini"
     case whisper = "whisper"
+    case gcpChirp = "gcpChirp"
 }
 
 public final class Configuration {
@@ -19,6 +20,11 @@ public final class Configuration {
     private let whisperUseMirrorStoreKey = "PressTalk_WhisperUseMirror"
     private let apiKeyAccount = "GeminiAPIKey"
 
+    private let gcpProjectIdStoreKey = "PressTalk_GCPProjectId"
+    private let gcpLocationStoreKey = "PressTalk_GCPLocation"
+    private let gcpModelNameStoreKey = "PressTalk_GCPModelName"
+    private let gcpApiKeyAccount = "GCPAPIKey"
+
     /// Legacy GCPDictation-era UserDefaults keys (U11 migration only).
     private let legacyAPIStoreKey = "GCPDictation_GeminiAPIKey"
     private let legacyDefaultsKeyMap = [
@@ -31,6 +37,7 @@ public final class Configuration {
 
     public static let defaultModelName = "gemini-2.5-flash"
     public static let defaultWhisperModel = "base"
+    public static let defaultGcpModelName = "chirp_3"
 
     private let defaults: UserDefaults
     private let keychain: SecretStore
@@ -143,6 +150,38 @@ public final class Configuration {
     public var transcriptionProvider: ProviderType {
         get { ProviderType(rawValue: defaults.string(forKey: providerTypeStoreKey) ?? "") ?? .gemini }
         set { defaults.set(newValue.rawValue, forKey: providerTypeStoreKey) }
+    }
+
+    public var gcpProjectId: String {
+        get { defaults.string(forKey: gcpProjectIdStoreKey) ?? "" }
+        set { defaults.set(newValue, forKey: gcpProjectIdStoreKey) }
+    }
+
+    public var gcpLocation: String {
+        get {
+            let stored = defaults.string(forKey: gcpLocationStoreKey) ?? ""
+            return stored.isEmpty ? "us-central1" : stored
+        }
+        set { defaults.set(newValue, forKey: gcpLocationStoreKey) }
+    }
+
+    public var gcpModelName: String {
+        get {
+            let stored = defaults.string(forKey: gcpModelNameStoreKey) ?? ""
+            return stored.isEmpty ? Self.defaultGcpModelName : stored
+        }
+        set { defaults.set(newValue, forKey: gcpModelNameStoreKey) }
+    }
+
+    public var gcpApiKey: String {
+        get { keychain.string(forAccount: gcpApiKeyAccount) ?? "" }
+        set {
+            if newValue.isEmpty {
+                keychain.removeString(forAccount: gcpApiKeyAccount)
+            } else {
+                keychain.setString(newValue, forAccount: gcpApiKeyAccount)
+            }
+        }
     }
 
     /// Short model IDs used in earlier builds that have been replaced with precise
