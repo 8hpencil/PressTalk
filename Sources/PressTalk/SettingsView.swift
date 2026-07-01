@@ -33,6 +33,7 @@ struct SettingsView: View {
     @State private var downloadedModels: Set<String> = {
         Set(WhisperProvider.supportedModels.map(\.modelId).filter { WhisperProvider.savedModelPath(for: $0) != nil })
     }()
+    @State private var localASRApiUrl: String = Configuration.shared.localASRApiUrl
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -86,16 +87,17 @@ struct SettingsView: View {
                 .fontWeight(.semibold)
 
             // Provider picker
-            HStack {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(L("settings.provider.label"))
                     .fontWeight(.medium)
                 Picker("", selection: $selectedProvider) {
                     Text(L("settings.provider.gemini")).tag(ProviderType.gemini)
                     Text(L("settings.provider.gcpChirp")).tag(ProviderType.gcpChirp)
                     Text(L("settings.provider.whisper")).tag(ProviderType.whisper)
+                    Text(L("settings.provider.localASR")).tag(ProviderType.localASR)
                 }
                 .pickerStyle(.segmented)
-                .frame(maxWidth: 280)
+                .frame(maxWidth: .infinity)
             }
 
             Divider().padding(.vertical, 2)
@@ -104,8 +106,10 @@ struct SettingsView: View {
                 geminiFields
             } else if selectedProvider == .gcpChirp {
                 gcpChirpFields
-            } else {
+            } else if selectedProvider == .whisper {
                 whisperFields
+            } else {
+                localASRFields
             }
 
             // Shared: prompt + hint words apply to both providers
@@ -128,6 +132,21 @@ struct SettingsView: View {
             Text(L("settings.hintWords.note"))
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+
+    private var localASRFields: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(L("settings.localASR.apiUrl.label"))
+                .fontWeight(.medium)
+            TextField(L("settings.localASR.apiUrl.placeholder"), text: $localASRApiUrl)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
+
+            Text(L("settings.localASR.privacy.note"))
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -425,6 +444,7 @@ struct SettingsView: View {
         Configuration.shared.gcpModelName = gcpModelName.trimmingCharacters(in: .whitespacesAndNewlines)
         Configuration.shared.whisperModelName = whisperModel
         Configuration.shared.whisperUseMirror = whisperUseMirror
+        Configuration.shared.localASRApiUrl = localASRApiUrl.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // Re-register the hotkey right away (B3: settings used to be display-only).
         NotificationCenter.default.post(name: .hotkeyConfigurationChanged, object: nil)

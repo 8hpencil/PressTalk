@@ -95,3 +95,9 @@
 "notif.gcp.noProjectId.title" = "Cannot start recording";
 "notif.gcp.noProjectId.body" = "Please configure your GCP Project ID first.";
 "error.gcp.missingProjectId" = "No GCP Project ID configured. Add one in Settings.";
+
+/* Local ASR */
+"settings.provider.localASR" = "Local ASR";
+"settings.localASR.apiUrl.label" = "API Endpoint:";
+"settings.localASR.apiUrl.placeholder" = "e.g. http://192.168.50.155:8000/v1/audio/transcriptions";
+"settings.localASR.privacy.note" = "Note: Audio is sent via multipart/form-data to your specified local ASR API endpoint (e.g. SenseVoice-Small). Data stays entirely within your own device and local network.";

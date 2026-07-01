@@ -95,3 +95,9 @@
 "notif.gcp.noProjectId.title" = "无法开始录音";
 "notif.gcp.noProjectId.body" = "请先配置 GCP 项目 ID。";
 "error.gcp.missingProjectId" = "未配置 GCP 项目 ID，请在设置中配置。";
+
+/* Local ASR */
+"settings.provider.localASR" = "本地 ASR";
+"settings.localASR.apiUrl.label" = "API 接口地址：";
+"settings.localASR.apiUrl.placeholder" = "例如：http://192.168.50.155:8000/v1/audio/transcriptions";
+"settings.localASR.privacy.note" = "提示：音频将以 multipart/form-data 格式发送到您指定的本地 ASR API 接口（如 SenseVoice-Small 服务）。数据完全留在您自己的设备与局域网内。";

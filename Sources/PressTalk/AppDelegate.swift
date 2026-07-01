@@ -63,6 +63,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             provider = WhisperProvider.shared
         case .gcpChirp:
             provider = GCPChirpProvider()
+        case .localASR:
+            provider = LocalASRProvider()
         }
         Log.app.info("Active provider: \(Configuration.shared.transcriptionProvider.rawValue)")
     }
@@ -153,6 +155,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         case .gemini:   modelName = Configuration.shared.modelName
         case .whisper:  modelName = Configuration.shared.whisperModelName
         case .gcpChirp: modelName = Configuration.shared.gcpModelName
+        case .localASR: modelName = "sensevoice"
         }
         let settings = ProviderSettings(
             modelName: modelName,

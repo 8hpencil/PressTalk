@@ -5,6 +5,7 @@ public enum ProviderType: String {
     case gemini = "gemini"
     case whisper = "whisper"
     case gcpChirp = "gcpChirp"
+    case localASR = "localASR"
 }
 
 public final class Configuration {
@@ -24,6 +25,8 @@ public final class Configuration {
     private let gcpLocationStoreKey = "PressTalk_GCPLocation"
     private let gcpModelNameStoreKey = "PressTalk_GCPModelName"
     private let gcpApiKeyAccount = "GCPAPIKey"
+    
+    private let localASRApiUrlStoreKey = "PressTalk_LocalASRApiUrl"
 
     /// Legacy GCPDictation-era UserDefaults keys (U11 migration only).
     private let legacyAPIStoreKey = "GCPDictation_GeminiAPIKey"
@@ -38,6 +41,7 @@ public final class Configuration {
     public static let defaultModelName = "gemini-2.5-flash"
     public static let defaultWhisperModel = "base"
     public static let defaultGcpModelName = "chirp_3"
+    public static let defaultLocalASRApiUrl = "http://192.168.50.155:8000/v1/audio/transcriptions"
 
     private let defaults: UserDefaults
     private let keychain: SecretStore
@@ -208,6 +212,16 @@ public final class Configuration {
     public var whisperUseMirror: Bool {
         get { defaults.bool(forKey: whisperUseMirrorStoreKey) }
         set { defaults.set(newValue, forKey: whisperUseMirrorStoreKey) }
+    }
+
+    public var localASRApiUrl: String {
+        get {
+            let stored = defaults.string(forKey: localASRApiUrlStoreKey) ?? ""
+            return stored.isEmpty ? Self.defaultLocalASRApiUrl : stored
+        }
+        set {
+            defaults.set(newValue, forKey: localASRApiUrlStoreKey)
+        }
     }
 
     public static let huggingFaceMirrorEndpoint = "https://hf-mirror.com"
